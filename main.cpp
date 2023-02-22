@@ -119,48 +119,86 @@ void display_mat(PMat mat)
         cout << endl;
     }
 } 
-void AjouterM(Mat* &m, int i, int j, int info)
-{
-    PCellule cell = new Cellule;
-    cell->i = i;
-    cell->j = j;
-    cell->info = info;
 
+
+void NAjouterM(Mat* &m, int i, int j, int x)
+{
+    PCellule p = new Cellule;
+    p->info = x;
+    p->i = i;
+    p->j = j;
+    p->suivC = NULL;
+    p->suivL = NULL;
     if (m->MH[j] == NULL) 
     {
-        m->MH[j] = cell;
-        m->MHq[j] = cell;
+        m->MH[j] = p;
+        m->MHq[j] = p;
     } 
     else
     {
-        PCellule p = m->MH[j];
-        while (p->suivL != NULL && p->suivL->j < cell->j) p = p->suivL;
-        
-        if (p->j == cell->j) p->info += cell->info;
-        else 
-        {
-            cell->suivL = p->suivL;
-            p->suivL = cell;
-        }
+        m->MHq[j]->suivL = p;
+        m->MHq[j] = p;
     }
 
     if (m->MV[i] == NULL) 
     {
-        m->MV[i] = cell;
-        m->MVq[i] = cell;
+        m->MV[i] = p;
+        m->MVq[i] = p;
     } 
     else
     {
-        PCellule p = m->MV[i];
-        while (p->suivC != NULL && p->suivC->i < cell->i) p = p->suivC;
-        
-        if (p->i == cell->i) p->info += cell->info;
-        else 
+        m->MVq[i]->suivC = p;
+        m->MVq[i] = p;
+    }
+}
+
+// Somme de deux matrices
+void Somme(Mat* m1, Mat* m2, Mat* &m3)
+{
+    if (m1->nbL != m2->nbL || m1->nbC != m2->nbC) cout << "Matrice incompatible";
+    else
+    {
+    int i, s;
+    PCellule p1, p2, r;
+    m3->nbL = m1->nbL;
+    m3->nbC = m1->nbC;  
+    init_mat(m3, m3->nbL, m3->nbC);
+    for (i=0;i<m1->nbL;i++)
+    {
+        p1 = m1->MV[i];
+        p2 = m2->MV[i];
+        while (p1 != NULL && p2 != NULL)
         {
-            cell->suivC = p->suivC;
-            p->suivC = cell;
+            if (p1->j == p2->j)
+            {
+                s = p1->info + p2->info;
+                if (s != 0) NAjouterM(m3, i, p1->j, s);
+                p1 = p1->suivC;
+                p2 = p2->suivC;
+            }
+            else if (p1->j < p2->j)
+            {
+                NAjouterM(m3, i, p1->j, p1->info);
+                p1 = p1->suivC;
+            }
+            else
+            {
+                NAjouterM(m3, i, p2->j, p2->info);
+                p2 = p2->suivC;
+            }
+        }
+        while (p1 != NULL)
+        {
+            NAjouterM(m3, i, p1->j, p1->info);
+            p1 = p1->suivC;
+        }
+        while (p2 != NULL)
+        {
+            NAjouterM(m3, i, p2->j, p2->info);
+            p2 = p2->suivC;
         }
     }
+}
 }
 
 void copier(Mat* mat, Mat* &copie)
@@ -191,64 +229,35 @@ void copier(Mat* mat, Mat* &copie)
     }  
 }
 
-Mat* somme_mat(Mat* m1, Mat* m2)
+PMat produit_matrice(PMat mat1, PMat mat2)
 {
-    if (m1->nbL != m2->nbL || m1->nbC != m2->nbC) cout << "Matrice incompatible";
-    else
-    {
-        Mat* m3 = new Mat;
-        m3->nbL = m1->nbL;
-        m3->nbC = m1->nbC;
-        init_mat(m3, m3->nbL, m3->nbC);
+    PMat mat3 = new Mat;
+    mat3->nbL = mat1->nbL;
+    mat3->nbC = mat2->nbC;
+    init_mat(mat3, mat3->nbL, mat3->nbC);
 
-        PCellule c, l;
-        copier(m1, m3);
-        
-        for (int i=0;i<m2->nbL;i++)
+    PCellule cell1, cell2;
+    for (int i=0;i<mat1->nbL;i++)
+    {
+        for (int j=0;j<mat2->nbC;j++) {
+        int somme=0;
+        cell1=mat1->MH[j];
+        cell2=mat2->MV[i];
+        while (cell2 != NULL && cell1 != NULL) 
         {
-            PCellule cell = m2->MV[i];
-            while (cell != NULL)
-            {
-                AjouterM(m3, cell->i, cell->j, cell->info);
-                cell = cell->suivC;
+            if (cell2->j == cell1->i) {
+                somme += cell2->info*cell1->info;
+                cell2 = cell2->suivC;
+                cell1 = cell1->suivL;
             }
+            else if (cell2->j > cell1->i) cell1 = cell1->suivL;
+            else if (cell2->j < cell1->i) cell2 = cell2->suivC;
         }
-        return m3;
-    }
-}
 
-Mat* prod(Mat* m1, Mat* m2) 
-{
-    if (m1->nbC != m2->nbL) cout << "Matrice incompatible";
-    else
-    {
-        Mat* m3;
-        m3->nbL = m1->nbL;
-        m3->nbC = m2->nbC;
-        init_mat(m3, m3->nbL, m3->nbC);
-
-        PCellule c, l;
-        for (int i=0;i<m1->nbL;i++)
-        {
-            for (int j=0;j<m2->nbC;j++) {
-            int somme=0;
-            l=m1->MH[j];
-            c=m2->MV[i];
-            while (c != NULL && l != NULL) 
-            {
-                if (c->j == l->i) {
-                    somme += c->info*l->info;
-                    c = c->suivC;
-                    l = l->suivL;
-                }
-                else if (c->j > l->i) l = l->suivL;
-                else if (c->j < l->i) c = c->suivC;
-            }
-
-            if (somme != 0) AjouterM(m3, i, j, somme);
-            }
+        if (somme != 0) NAjouterM(mat3, i, j, somme);
         }
     }
+    return mat3;
 }
 
 int main() 
@@ -259,9 +268,17 @@ int main()
     PMat mat = new Mat;
     load_ffile(mat, "mat.txt");
 
-    cout << "\n SOMME :\n";
     PMat smat = new Mat;
-    smat = somme_mat(mat, mat2);
+    Somme(mat, mat2, smat);
+
+    cout << "\n SOMME :\n";
+
     display_mat(smat);
+
+    PMat prod = new Mat;
+    prod = produit_matrice(mat, mat2);
+
+    cout << "\n PRODUIT :\n";
+    display_mat(prod);
     return 0;
 }
