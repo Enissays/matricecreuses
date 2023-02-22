@@ -126,14 +126,14 @@ void AjouterM(Mat* &m, int i, int j, int info)
     cell->j = j;
     cell->info = info;
 
-    if (m->MH[i] == NULL) 
+    if (m->MH[j] == NULL) 
     {
-        m->MH[i] = cell;
-        m->MHq[i] = cell;
+        m->MH[j] = cell;
+        m->MHq[j] = cell;
     } 
     else
     {
-        PCellule p = m->MH[i];
+        PCellule p = m->MH[j];
         while (p->suivL != NULL && p->suivL->j < cell->j) p = p->suivL;
         
         if (p->j == cell->j) p->info += cell->info;
@@ -144,14 +144,14 @@ void AjouterM(Mat* &m, int i, int j, int info)
         }
     }
 
-    if (m->MV[j] == NULL) 
+    if (m->MV[i] == NULL) 
     {
-        m->MV[j] = cell;
-        m->MVq[j] = cell;
+        m->MV[i] = cell;
+        m->MVq[i] = cell;
     } 
     else
     {
-        PCellule p = m->MV[j];
+        PCellule p = m->MV[i];
         while (p->suivC != NULL && p->suivC->i < cell->i) p = p->suivC;
         
         if (p->i == cell->i) p->info += cell->info;
@@ -203,6 +203,16 @@ Mat* somme_mat(Mat* m1, Mat* m2)
 
         PCellule c, l;
         copier(m1, m3);
+        
+        for (int i=0;i<m2->nbL;i++)
+        {
+            PCellule cell = m2->MV[i];
+            while (cell != NULL)
+            {
+                AjouterM(m3, cell->i, cell->j, cell->info);
+                cell = cell->suivC;
+            }
+        }
         return m3;
     }
 }
@@ -224,7 +234,7 @@ Mat* prod(Mat* m1, Mat* m2)
             int somme=0;
             l=m1->MH[j];
             c=m2->MV[i];
-            while (c != NULL && j != NULL) 
+            while (c != NULL && l != NULL) 
             {
                 if (c->j == l->i) {
                     somme += c->info*l->info;
