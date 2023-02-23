@@ -259,6 +259,33 @@ PMat produit_matrice(PMat mat1, PMat mat2)
     }
     return mat3;
 }
+void liberer_mat(PMat mat)
+{
+    for (int i=0;i<mat->nbL;i++)
+    {
+        PCellule p = mat->MH[i];
+        while (p != NULL)
+        {
+            PCellule cell = p;
+            p = p->suivC;
+            delete cell;
+        }
+    }
+    delete mat;
+}
+
+PMat puissance_matrice(PMat mat, int n)
+{
+    PMat mat2 = new Mat;
+    copier(mat, mat2);
+    for (int i=0;i<n-1;i++)
+    {
+        PMat mat3 = produit_matrice(mat, mat2);
+        liberer_mat(mat2);
+        mat2 = mat3;
+    }
+    return mat2;
+}
 
 int main() 
 {
