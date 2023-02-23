@@ -52,6 +52,8 @@ typedef Mat* PMat;
 void init_mat(PMat &mat, int nbL, int nbC)
 {
         int i;
+        mat->nbL = nbL;
+        mat->nbC = nbC;
         for (i=0;i<nbL;i++) 
         {
             mat->MV.push_back(NULL);
@@ -113,14 +115,14 @@ void display_mat(PMat mat)
         while (cell != NULL)
         {
             cout << cell->info;
-            cout << " ";
+            cout << "\t|";
             cell = cell->suivC;
         }        
         cout << endl;
     }
 } 
 
-
+// Produit de deux matrices
 void NAjouterM(Mat* &m, int i, int j, int x)
 {
     PCellule p = new Cellule;
@@ -200,9 +202,10 @@ void Somme(Mat* m1, Mat* m2, Mat* &m3)
     }
 }
 }
-
+// Produit de deux matrices
 void copier(Mat* mat, Mat* &copie)
 {
+    init_mat(copie, mat->nbL, mat->nbC);
     for (int i=0;i<mat->nbL;i++)
     {
         PCellule p = mat->MH[i];
@@ -224,46 +227,53 @@ void copier(Mat* mat, Mat* &copie)
             else copie->MHq[cell->j]->suivL = cell;
 
             copie->MHq[cell->j] = cell; 
-            p = p->suivC;       
+            p = p->suivC;    
         }
     }  
 }
-
+// Produit de deux matrices
 PMat produit_matrice(PMat mat1, PMat mat2)
 {
-    PMat mat3 = new Mat;
-    mat3->nbL = mat1->nbL;
-    mat3->nbC = mat2->nbC;
-    init_mat(mat3, mat3->nbL, mat3->nbC);
-
-    PCellule cell1, cell2;
-    for (int i=0;i<mat1->nbL;i++)
+    if (mat1->nbC != mat2->nbL) cout << "Matrice incompatible";
+    else
     {
-        for (int j=0;j<mat2->nbC;j++) {
-        int somme=0;
-        cell1=mat1->MH[j];
-        cell2=mat2->MV[i];
-        while (cell2 != NULL && cell1 != NULL) 
-        {
-            if (cell2->j == cell1->i) {
-                somme += cell2->info*cell1->info;
-                cell2 = cell2->suivC;
-                cell1 = cell1->suivL;
-            }
-            else if (cell2->j > cell1->i) cell1 = cell1->suivL;
-            else if (cell2->j < cell1->i) cell2 = cell2->suivC;
-        }
+        PMat mat3 = new Mat;
+        mat3->nbL = mat1->nbL;
+        mat3->nbC = mat2->nbC;
+        init_mat(mat3, mat3->nbL, mat3->nbC);
 
-        if (somme != 0) NAjouterM(mat3, i, j, somme);
+        PCellule cell1, cell2;
+        for (int i=0;i<mat1->nbL;i++)
+        {
+            for (int j=0;j<mat2->nbC;j++) {
+            int somme=0;
+            cell1=mat1->MH[j];
+            cell2=mat2->MV[i];
+            while (cell2 != NULL && cell1 != NULL) 
+            {
+                if (cell2->j == cell1->i) {
+                    somme += cell2->info*cell1->info;
+                    cell2 = cell2->suivC;
+                    cell1 = cell1->suivL;
+                }
+                else if (cell2->j > cell1->i) cell1 = cell1->suivL;
+                else if (cell2->j < cell1->i) cell2 = cell2->suivC;
+            }
+
+            if (somme != 0) NAjouterM(mat3, i, j, somme);
+            }
         }
+        
+        return mat3;
     }
-    return mat3;
+    return NULL;
 }
+//Fonction qui libère la mémoire d'une matrice
 void liberer_mat(PMat mat)
 {
     for (int i=0;i<mat->nbL;i++)
     {
-        PCellule p = mat->MH[i];
+        PCellule p = mat->MV[i];
         while (p != NULL)
         {
             PCellule cell = p;
@@ -274,6 +284,7 @@ void liberer_mat(PMat mat)
     delete mat;
 }
 
+//Fonction qui calcule la puissance d'une matrice
 PMat puissance_matrice(PMat mat, int n)
 {
     PMat mat2 = new Mat;
@@ -286,6 +297,42 @@ PMat puissance_matrice(PMat mat, int n)
     }
     return mat2;
 }
+
+//Fonction qui calcule la matrice identité
+PMat matrice_identite(int n)
+{
+    PMat mat = new Mat;
+    init_mat(mat, n, n);
+    for (int i=0;i<n;i++)
+    {
+        NAjouterM(mat, i, i, 1);
+    }
+    return mat;
+}
+
+//Fonction qui calcule la somme de deux matrices
+PMat sigma_matrice(PMat mat, int n)
+{
+    
+    PMat mat2 = new Mat;
+    init_mat(mat2, mat->nbL, mat->nbC);
+    copier(mat, mat2);
+    for (int i=0;i<n-1;i++)
+    {
+        if (i == 0) mat2 = matrice_identite(mat->nbL);
+        else
+        {
+            PMat mat3 = produit_matrice(mat, mat2);
+            PMat mat4 = new Mat;
+            Somme(mat2, mat3, mat4);
+            liberer_mat(mat2);
+            liberer_mat(mat3);
+            mat2 = mat4;
+        }
+    }
+    return mat2;
+}
+
 
 int main() 
 {
@@ -307,5 +354,18 @@ int main()
 
     cout << "\n PRODUIT :\n";
     display_mat(prod);
+
+    PMat puiss = new Mat;
+    puiss = puissance_matrice(mat, 3);
+
+    cout << "\n PUISSANCE :\n";
+    display_mat(puiss);
+
+    PMat sigma = new Mat;
+    sigma = sigma_matrice(mat, 3);
+
+    cout << "\n SIGMA :\n";
+    display_mat(sigma);
+    
     return 0;
 }
