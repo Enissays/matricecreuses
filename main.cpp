@@ -367,5 +367,11 @@ int main()
     cout << "\n SIGMA :\n";
     display_mat(sigma);
     
+    liberer_mat(mat);
+    liberer_mat(mat2);
+    liberer_mat(smat);
+    liberer_mat(prod);
+    liberer_mat(puiss);
+    liberer_mat(sigma);
     return 0;
 }
